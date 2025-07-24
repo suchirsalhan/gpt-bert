@@ -21,10 +21,7 @@ from model_extra import Bert
 from utils import cosine_schedule_with_warmup_cooldown, is_main_process, seed_everything
 from dataset import MaskedDataset, CausalDataset, ValidationDataset
 from model_logging import ModelLogger
-
-
-if int(os.environ["SLURM_PROCID"]) == 0:
-    import wandb
+import wandb
 
 
 def parse_arguments():
