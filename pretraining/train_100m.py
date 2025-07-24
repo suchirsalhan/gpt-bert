@@ -78,10 +78,9 @@ def parse_arguments():
 def setup_training(args, tokenizer):
     assert torch.cuda.is_available()
     args.n_gpu = torch.cuda.device_count()
-
     args.world_size = int(os.environ.get("WORLD_SIZE", 1))
-    args.rank = int(os.environ["SLURM_PROCID"])
-    args.gpus_per_node = int(os.environ["SLURM_GPUS_ON_NODE"])
+    args.rank = int(os.environ.get("SLURM_PROCID", 0))
+    args.gpus_per_node = int(os.environ.get("SLURM_GPUS_ON_NODE", 1))
     assert args.gpus_per_node == torch.cuda.device_count()
     print(f"Hello from rank {args.rank} of {args.world_size} on {gethostname()} where there are {args.gpus_per_node} allocated GPUs per node.", flush=True)
 
