@@ -86,9 +86,12 @@ def setup_training(args, tokenizer):
     args.vocab_size = tokenizer.get_vocab_size()
 
     wandb.init(
-        name=args.name,
-        project=args.wandb_project,
-        entity=args.wandb_entity
+        name="babylm-interaction",
+        entity="babylm-interaction",
+        project="gptbert",
+        name=run_name,
+        mode="disabled" if dry_run else "online",
+        config={"resume_from": latest_checkpoint if latest_checkpoint else "none"}
     )
 
 
