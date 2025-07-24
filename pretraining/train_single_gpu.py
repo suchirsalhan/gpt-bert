@@ -28,7 +28,6 @@ def parse_arguments():
     parser = argparse.ArgumentParser()
 
     parser.add_argument("--train_path", default="../data/train_100M_tokenized.bin", type=Path, help="Path to the training data.")
-    parser.add_argument("--valid_path", default="../data/dev_100M_tokenized.bin", type=Path, help="Path to the validation data.")
     parser.add_argument("--name", default="hybrid_100M", type=str, help="Name of the run.")
     parser.add_argument("--wandb_project", default="YOUR_WANDB_PROJECT_NAME", type=str, help="Name of the WandB project to log into.")
     parser.add_argument("--wandb_entity", default="YOUR_WANDB_ENTITY", type=str, help="The entity to log to on WandB (typically your wandb username).")
@@ -179,37 +178,6 @@ def get_batch(dataloader, device, global_step):
     return input_ids, attention_mask, target_ids, mask_p
 
 
-@torch.no_grad()
-def validation_epoch(model, valid_dataloader, masked_epoch, causal_epoch, args, commit=False):
-    model = model.eval()
-
-    losses, accuracies = [], []
-    valid_dataloader = iter(valid_dataloader)
-    input_ids, attention_mask, target_ids, _ = get_batch(valid_dataloader, args.device, 0)
-    for local_step in tqdm(range(args.validation_steps), desc="Valid iteration", disable=not is_main_process()):
-
-        with torch.cuda.amp.autocast(args.mixed_precision, dtype=torch.bfloat16):
-            loss, accuracy, _, num_tokens = model(input_ids, attention_mask, target_ids)
-
-        if local_step < args.validation_steps - 1:
-            input_ids, attention_mask, target_ids, _ = get_batch(valid_dataloader, args.device, 0)
-
-        losses.append(loss.item())
-        accuracies.append(accuracy.item())
-
-    if is_main_process():
-        wandb.log(
-            {
-                "masked_epoch": masked_epoch,
-                "causal_epoch": causal_epoch,
-                "validation/loss": mean(losses),
-                "validation/accuracy": mean(accuracies) * 100.0,
-                "validation/perplexity": math.exp(mean(losses))
-            },
-            commit=commit
-        )
-
-
 def save(model, ema_model, optimizer, scheduler, global_step, masked_epoch, causal_epoch, args):
     if is_main_process():
         model_to_save = model.module if hasattr(model, 'module') else model  # Only save the model itself
@@ -323,19 +291,6 @@ def init_datasets(args, tokenizer):
         )
     else:
         causal_train_dataloader = None
-
-    valid_data = ValidationDataset(args.valid_path, tokenizer, args)
-
-    valid_dataloader = DataLoader(
-        valid_data,
-        shuffle=False,
-        batch_size=args.local_batch_size,
-        num_workers=0,  # non-zero num_workers causes segmenation fault
-        generator=torch.Generator().manual_seed(42),
-        drop_last=True,
-        pin_memory=True,
-    )
-
     return masked_train_dataloader, causal_train_dataloader, valid_dataloader
 
 
@@ -444,12 +399,6 @@ def training_epoch(model, ema_model, train_dataloader, valid_dataloader, optimiz
         # checkpoint the model and the full training state
         if global_step % args.save_every == 0:
             save(model, ema_model, optimizer, scheduler, global_step, masked_epoch, causal_epoch, args)
-
-        # validate the model
-        if (global_step + 1) % args.validate_every == 0:
-            validation_epoch(model, valid_dataloader, masked_epoch, causal_epoch, args)
-            model.train()
-
         # log the stats and commit
         if is_main_process():
             wandb.log({"global_step": global_step}, commit=True)
@@ -593,11 +542,6 @@ def training(model, ema_model, masked_train_dataloader, causal_train_dataloader,
         if global_step % args.save_every == 0:
             save(model, ema_model, optimizer, scheduler, global_step, masked_epoch, causal_epoch, args)
 
-        # validate the model
-        if (global_step + 1) % args.validate_every == 0:
-            validation_epoch(model, valid_dataloader, masked_epoch, causal_epoch, args)
-            model.train()
-
         # log the stats and commit
         if is_main_process():
             wandb.log({"global_step": global_step}, commit=True)
@@ -640,4 +584,3 @@ if __name__ == "__main__":
                 break
 
     save(model, ema_model, optimizer, scheduler, global_step, masked_epoch, causal_epoch, args)
-    validation_epoch(model, valid_dataloader, masked_epoch, causal_epoch, args, commit=True)
