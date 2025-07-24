@@ -79,7 +79,7 @@ def setup_training(args, tokenizer):
     assert torch.cuda.is_available()
     args.n_gpu = torch.cuda.device_count()
 
-    args.world_size = int(os.environ["WORLD_SIZE"])
+    args.world_size = int(os.environ.get("WORLD_SIZE", 1))
     args.rank = int(os.environ["SLURM_PROCID"])
     args.gpus_per_node = int(os.environ["SLURM_GPUS_ON_NODE"])
     assert args.gpus_per_node == torch.cuda.device_count()
