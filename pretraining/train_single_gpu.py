@@ -89,7 +89,6 @@ def setup_training(args, tokenizer):
         name="babylm-interaction",
         entity="babylm-interaction",
         project="gptbert",
-        name=run_name,
         mode="disabled" if dry_run else "online",
         config={"resume_from": latest_checkpoint if latest_checkpoint else "none"}
     )
