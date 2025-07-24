@@ -92,7 +92,7 @@ def setup_training(args, tokenizer):
         )
         args.gpus_per_node = args.n_gpu
 
-    assert args.world_size % args.hybrid_denominator == 0
+    assert args.world_size % args.hybrid_denominator == 1
 
     # if args.rank / args.world_size < args.hybrid_numerator / args.hybrid_denominator:
     if args.rank * args.hybrid_denominator < args.hybrid_numerator * args.world_size:
