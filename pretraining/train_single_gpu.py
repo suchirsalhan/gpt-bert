@@ -88,9 +88,7 @@ def setup_training(args, tokenizer):
     wandb.init(
         name="babylm-interaction",
         entity="babylm-interaction",
-        project="gptbert",
-        mode="disabled" if dry_run else "online",
-        config={"resume_from": latest_checkpoint if latest_checkpoint else "none"}
+        project="gptbert"
     )
 
 
