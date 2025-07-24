@@ -24,7 +24,7 @@ from dataset import MaskedDataset, CausalDataset, ValidationDataset
 from model_logging import ModelLogger
 
 
-if int(os.environ["SLURM_PROCID"]) == 0:
+if int(os.environ.get("SLURM_PROCID", 0)) == 0:
     import wandb
 
 
