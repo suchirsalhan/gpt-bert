@@ -537,7 +537,7 @@ if __name__ == "__main__":
     setup_training(args, tokenizer)
     model, ema_model, optimizer, scheduler, global_step, start_epoch = prepare_model_and_optimizer(args)
 
-    masked_train_dataloader, causal_train_dataloader, _ = init_datasets(args, tokenizer)
+    masked_train_dataloader, causal_train_dataloader = init_datasets(args, tokenizer)
     # Only mixed masked/causal training remains
     global_step, masked_epoch, causal_epoch = training(
         model, ema_model, masked_train_dataloader, causal_train_dataloader,
