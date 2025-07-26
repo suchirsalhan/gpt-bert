@@ -376,7 +376,7 @@ def training_epoch(model, ema_model, train_dataloader, optimizer, scheduler, glo
                 "stats/grad_norm": total_grad_norm,
                 "stats/seq_length": train_dataloader.dataset.seq_length,
                 "stats/global_batch_size": args.current_global_batch_size,
-                "stats/local_batch_size": args.current_local_batch_size,
+                #"stats/local_batch_size": args.current_local_batch_size,
                 "stats/accumulate_steps": args.accumulate_steps,
                 "stats/mask_p": mask_p.item(),
             },
@@ -457,7 +457,7 @@ def training(model, ema_model, masked_train_dataloader, causal_train_dataloader,
             attention_mask = full_attention_mask[start:start+args.local_batch_size]
             target_ids = full_target_ids[:, start:start+args.local_batch_size]
 
-            with torch.cuda.amp.autocast(args.mixed_precision, dtype=torch.bfloat16):
+            with torch.amp.autocast('cuda', dtype=torch.bfloat16):
                 with ModelLogger(enable=global_step % 100 == 0, module=model):
                     loss, masked_loss, causal_loss, accuracy, masked_accuracy, causal_accuracy, z_loss, num_tokens = model(
                         input_ids, attention_mask, target_ids, num_masked, args.ratio
